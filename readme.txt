@@ -7,6 +7,9 @@ Use "pip install <package>" for all of the below:
     - selenium
     - playsound
 
+*Selenium requires a browser driver if you're on windows you're covered... if you're on another platform please
+"google selenium webdriver <your_os_here>" and place it in this directory. You will then have to modify line 43 of "gpu_scraper.py"
+
 The scraper requires Tesseract-OCR to be installed
     - Windows: https://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-w64-setup-v5.0.0-alpha.20201127.exe
         - If you're running 64 bit it should already be pointed to the right location on lines 10-12 of "gpu_scraper.py"
