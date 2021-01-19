@@ -1,0 +1,17 @@
+{
+    "interval": 5,
+    "targets": [
+        {
+            "name": "3080FE",
+            "link": "https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440"
+        },
+        {
+            "name": "3080asus_strix",
+            "link": "https://www.bestbuy.com/site/asus-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-strix-graphics-card-black/6432445.p?skuId=6432445"
+        },
+        {
+            "name": "3080_evgaxc3",
+            "link": "https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-ultra-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6432400.p?skuId=6432400"
+        }
+    ]
+}
