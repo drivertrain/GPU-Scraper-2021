@@ -6,6 +6,8 @@ from playsound import playsound
 import pytesseract
 import asyncio
 import sys
+from threading import Thread
+from functools import partial
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
@@ -215,6 +217,17 @@ if __name__ == "__main__":
 
     
 
-    scraper = BBScraper(interval=wait_interval, targets=best_buy)
-    # scraper = BandHScraper(interval=wait_interval, targets=b_and_h)
-    asyncio.run(scraper.main())
+    scraper1 = BBScraper(interval=wait_interval, targets=best_buy)
+    scraper2 = BandHScraper(interval=wait_interval, targets=b_and_h)
+    
+    scraper_target_1 = partial(asyncio.run, scraper1.main())
+    scraper_target_2 = partial(asyncio.run, scraper2.main())
+
+    threads = [Thread(target=scraper_target_1, name="BestBuyScraper"), Thread(target=scraper_target_2, name="BandHScraper")]
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
