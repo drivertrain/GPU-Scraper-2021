@@ -77,6 +77,7 @@ class GPUScraper:
             else:
                 if await self.check_yellow(target):
                     self.play_alarm()
+                    print(target.link)
 
         return
 
