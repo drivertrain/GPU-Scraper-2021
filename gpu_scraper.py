@@ -17,6 +17,28 @@ async def wait_one_second():
     # print("...", flush=True)
     return
 
+def remove_colors(image, colors, replacement=(255, 255, 255)):
+    image_data = image.load()
+    h, w = image.size
+    for x in range(h):
+        for y in range(w):
+            r, g, b, a = image_data[x, y]
+            for color in colors:
+                if (r, g, b) == color:
+                    (r, g, b) = replacement
+                    image_data[x, y] = r, g, b, a
+    return image
+
+def contains_color(image, colors):
+    image_data = image.load()
+    h, w = image.size
+    for x in range(h):
+        for y in range(w):
+            r, g, b, a = image_data[x, y]
+            for color in colors:
+                if (r, g, b) == color:
+                    return True
+    return False
 
 class GPU:
     def __init__(self, **kwargs):
@@ -24,19 +46,31 @@ class GPU:
             "link",
             "https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440",
         )
-        self.name = kwargs.get("name", "3080FE")
+        self.given_name = kwargs.get("name", "3080FE")
 
     def __repr__(self, **kwargs):
         return self.name
 
+    @property
+    def name(self):
+        return self.given_name.replace(" ", "")
+
+    @property
+    def path(self):
+        invalid = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
+        path = self.name
+        for char in invalid:
+            path = path.replace(char, "")
+
+        return path + ".png"
+
 
 class GPUScraper:
-    def __init__(self, *args, **kwargs):
-        self.wait_interval = kwargs.get("interval", 10)
-        self.targets = []
-        for target in kwargs.get("targets", [{"n/a": "n/a"}]):
-            self.targets.append(GPU(**target))
-        print(self.targets)
+    def __init__(self, interval, targets):
+        self.wait_interval = interval
+        self.targets = targets
+        self.path = ""
+        self.provider = ""
         return
 
     async def initialize(self, **kwargs):
@@ -44,82 +78,39 @@ class GPUScraper:
         driver.set_window_position(0, 0)
         driver.set_window_size(800, 600)
         self.driver = driver
-
         return
-
-    async def check_yellow(self, target):
-        # look for the yellow color that would be on add to cart button to verify
-        bb_yellow = (255, 224, 0)
-        image = Image.open("current_{}.png".format(target.name))
-        image_data = image.load()
-        h, w = image.size
-        for x in range(h):
-            for y in range(w):
-                r, g, b, a = image_data[x, y]
-                if (r, g, b) == bb_yellow:
-                    print("Add to Cart Yellow Found On Screen", flush=True)
-                    return True
-        return False
 
     def play_alarm(self):
         playsound("annoying.mp3")
 
     async def check_stock(self, **kwargs):
-
-        # print("Checking Stock", flush=True)
         for target in self.targets:
-            result = ""
-            while result == "":
-                result = await self.get_text(target)
-            print("{}: {}".format(target.name, result), flush=True)
-            if "sold out" in result.lower():
-                pass
-            else:
-                if await self.check_yellow(target):
+            try:
+                result = await self.check_gpu(target)
+                if result:
                     self.play_alarm()
-                    print(target.link)
-
+                    print(target.link, flush=True)
+                    print(
+                        "{} {}: {}".format(self.provider, target.name, "In Stock"),
+                        flush=True,
+                    )
+                else:
+                    print(
+                        "{} {}: {}".format(self.provider, target.name, "Out of Stock"),
+                        flush=True,
+                    )
+            except:
+                print("Error fetching {} from {}".format(target.name, self.provider))
         return
 
-    async def get_text(self, target):
-        def convert_image(taget, image):
-            # convert grey color to white
-            image_data = image.load()
-            h, w = image.size
-            for x in range(h):
-                for y in range(w):
-                    r, g, b, a = image_data[x, y]
-                    if (r == 197) and (g == 203) and (b == 213):
-                        r = 255
-                        g = 255
-                        b = 255
-                    if (r == 43) and (g == 93) and (b == 245):
-                        r = 255
-                        g = 255
-                        b = 255
-
-                    image_data[x, y] = r, g, b, a
-            image.save("curr_fixed_%s.png" % target.name)
-            return
-
-        driver = self.driver
-        driver.get(target.link)
-        await wait_one_second()
-        button = driver.find_element_by_class_name("fulfillment-add-to-cart-button")
-        button.screenshot("current_{}.png".format(target.name))
-        # get rid of gray color that stops text recognition
-        convert_image(target, Image.open("current_{}.png".format(target.name)))
-        text = pytesseract.image_to_string(
-            Image.open("curr_fixed_{}.png".format(target.name))
-        )
-        return text.strip()
+    async def check_gpu(self, target):
+        return
 
     async def main(self):
         start_time = datetime.datetime.now()
         await self.initialize()
-        still_need = True
         trials = 0
-        while still_need:
+        while True:
             trials += 1
             if trials % 10 == 0:
                 print(
@@ -134,12 +125,96 @@ class GPUScraper:
         return
 
 
+class BBScraper(GPUScraper):
+    def __init__(self, interval, targets):
+        super().__init__(interval, targets)
+        self.path = "img/bestbuy/"
+        self.provider = "BestBuy"
+
+    async def validate(self, target):
+        # look for the yellow color that would be on add to cart button to verify
+        bb_yellow = (255, 224, 0)
+        image = Image.open(self.path + target.path)
+        return contains_color(image, colors=[bb_yellow])
+
+        
+
+    async def check_gpu(self, target):
+        colors_to_rid = [(197, 203, 213), (43, 93, 245)]
+        driver = self.driver
+        driver.get(target.link)
+        button = driver.find_element_by_class_name("fulfillment-add-to-cart-button")
+        button.screenshot(self.path + target.path)
+        await wait_one_second()
+        button.screenshot(self.path + target.path)
+        # get rid of gray color that stops text recognition
+        converted = remove_colors(Image.open(self.path + target.path), colors=colors_to_rid, replacement=(255,255,255))
+        text = pytesseract.image_to_string(converted).strip()
+        if text == "":
+            self.check_gpu(target)
+        else:
+            if "sold out" in text.lower():
+                return False
+            else:
+                return await self.validate(target)
+
+
+class BandHScraper(GPUScraper):
+    def __init__(self, interval, targets):
+        super().__init__(interval, targets)
+        self.path = "img/bandh/"
+        self.provider = "B&H"
+
+    async def validate(self, target):
+        bandh_blue = (10, 146, 202)
+        image = Image.open(self.path + target.path)
+        return contains_color(image, colors=[bandh_blue])
+        
+        
+
+    async def check_gpu(self, target):
+        driver = self.driver
+        driver.get(target.link)
+        button = driver.find_element_by_class_name("cartRow_2dS2mdogHYAqhmKoANr6Ol")
+        button.screenshot(self.path + target.path)
+        await wait_one_second()
+        button.screenshot(self.path + target.path)
+        text = pytesseract.image_to_string(Image.open(self.path+target.path)).strip()
+        if "notify" or "cart" in text.lower():
+            if "add to cart" in text.lower():
+                return await self.validate(target)
+            else: return False
+        
+            
+
+
+
+
 if __name__ == "__main__":
+
     try:
         config = eval(open("scraper_config.json").read())
-    except e:
+    except:
         print("Couldn't open config...only checking 3080FE")
         config = {"no_config": None}
 
-    scraper = GPUScraper(**config)
+    wait_interval = config.get("interval", 10)
+
+    best_buy = []
+    b_and_h = []
+    newegg = []
+
+    for target in config.get("targets", [{"n/a": "n/a"}]):
+        gpu = GPU(**target)
+        if "newegg" in gpu.link:
+            newegg.append(gpu)
+        elif "bhphotovideo" in gpu.link:
+            b_and_h.append(gpu)
+        elif "bestbuy" in gpu.link:
+            best_buy.append(gpu)
+
+    
+
+    scraper = BBScraper(interval=wait_interval, targets=best_buy)
+    # scraper = BandHScraper(interval=wait_interval, targets=b_and_h)
     asyncio.run(scraper.main())
