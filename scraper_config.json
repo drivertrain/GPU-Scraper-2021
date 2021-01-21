@@ -2,20 +2,50 @@
     "interval": 5,
     "targets": [
         {
-            "name": "3080FE",
-            "link": "https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440"
+            "name": "3080 FE",
+            "links": [
+                "https://www.bestbuy.com/site/nvidia-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-graphics-card-titanium-and-black/6429440.p?skuId=6429440"
+            ]
         },
         {
-            "name": "3080asus_strix",
-            "link": "https://www.bestbuy.com/site/asus-geforce-rtx-3080-10gb-gddr6x-pci-express-4-0-strix-graphics-card-black/6432445.p?skuId=6432445"
-        },
-        {
-            "name": "3080_evgaxc3",
-            "link": "https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-ultra-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6432400.p?skuId=6432400"
+            "name": "EVGA 3080 XC3",
+            "links": [
+                "https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-black-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6432399.p?skuId=6432399",
+                "https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-ultra-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6432400.p?skuId=6432400",
+                "https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6436194.p?skuId=6436194",
+                "https://www.newegg.com/evga-geforce-rtx-3080-10g-p5-3883-kr/p/N82E16814487521?Description=xc3&cm_re=xc3-_-14-487-521-_-Product&quicklink=true",
+                "https://www.newegg.com/evga-geforce-rtx-3080-10g-p5-3885-kr/p/N82E16814487520?Description=3080&cm_re=3080-_-14-487-520-_-Product",
+                "https://www.newegg.com/evga-geforce-rtx-3080-10g-p5-3881-kr/p/N82E16814487522?Description=3080&cm_re=3080-_-14-487-522-_-Product"
+            ]
         },
         {
             "name": "ASUS EKWB 3080",
-            "link": "https://www.bhphotovideo.com/c/product/1614303-REG/asus_rtx3080_10g_ek_ekwb_geforce_rtx_3080.html"
+            "links": [
+                "https://www.bhphotovideo.com/c/product/1614303-REG/asus_rtx3080_10g_ek_ekwb_geforce_rtx_3080.html",
+                "https://www.newegg.com/asus-geforce-rtx-3080-rtx3080-10g-ek/p/N82E16814126488"
+            ]
+        },
+        {
+            "name": "Zotac 3080 Trinity OC",
+            "links": [
+                "https://www.newegg.com/zotac-geforce-rtx-3080-zt-t30800j-10p/p/N82E16814500504?Description=trinity%203080&cm_re=trinity_3080-_-14-500-504-_-Product&quicklink=true"
+            ]
+        },
+        {
+            "name": "MSI Ventus 3X",
+            "links": [
+                "https://www.bestbuy.com/site/msi-nvidia-geforce-rtx-3080-ventus-3x-10g-oc-bv-gddr6x-pci-express-4-0-graphic-card-black-silver/6430175.p?skuId=6430175",
+                "https://www.newegg.com/msi-geforce-rtx-3080-rtx-3080-ventus-3x-10g-oc/p/N82E16814137598?Description=ventus%203x&cm_re=ventus_3x-_-14-137-598-_-Product&quicklink=true"
+            ]
+        },
+        {
+            "name": "PNY 3080 XLR8",
+            "links": [
+                "https://www.bhphotovideo.com/c/product/1595780-REG/pny_technologies_vcg308010tfxmpb_geforce_rtx_3080_10gb.html",
+                "https://www.newegg.com/pny-geforce-rtx-3080-vcg308010tfxppb/p/N82E16814133809?Description=3080&cm_re=3080-_-14-133-809-_-Product",
+                "https://www.bestbuy.com/site/pny-geforce-rtx-3080-10gb-xlr8-gaming-epic-x-rgb-triple-fan-graphics-card/6432658.p?skuId=6432658",
+                "https://www.bestbuy.com/site/pny-geforce-rtx-3080-10gb-xlr8-gaming-epic-x-rgb-triple-fan-graphics-card/6432655.p?skuId=6432655"
+            ]
         }
     ]
 }

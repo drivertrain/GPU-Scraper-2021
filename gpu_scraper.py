@@ -8,6 +8,7 @@ import asyncio
 import sys
 from threading import Thread
 from functools import partial
+from colorama import Fore
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
@@ -18,6 +19,7 @@ async def wait_one_second():
     await asyncio.sleep(1)
     # print("...", flush=True)
     return
+
 
 def remove_colors(image, colors, replacement=(255, 255, 255)):
     image_data = image.load()
@@ -31,6 +33,7 @@ def remove_colors(image, colors, replacement=(255, 255, 255)):
                     image_data[x, y] = r, g, b, a
     return image
 
+
 def contains_color(image, colors):
     image_data = image.load()
     h, w = image.size
@@ -42,6 +45,7 @@ def contains_color(image, colors):
                     return True
     return False
 
+
 class GPU:
     def __init__(self, **kwargs):
         self.link = kwargs.get(
@@ -51,7 +55,7 @@ class GPU:
         self.given_name = kwargs.get("name", "3080FE")
 
     def __repr__(self, **kwargs):
-        return self.name
+        return self.given_name
 
     @property
     def name(self):
@@ -73,6 +77,7 @@ class GPUScraper:
         self.targets = targets
         self.path = ""
         self.provider = ""
+        self.error_count = 0
         return
 
     async def initialize(self, **kwargs):
@@ -86,42 +91,57 @@ class GPUScraper:
         playsound("annoying.mp3")
 
     async def check_stock(self, **kwargs):
+        strformat = Fore.LIGHTYELLOW_EX + "%-10s "+ Fore.CYAN+ "%-25s %-10s"
         for target in self.targets:
             try:
                 result = await self.check_gpu(target)
                 if result:
                     self.play_alarm()
                     print(target.link, flush=True)
-                    print(
-                        "{} {}: {}".format(self.provider, target.name, "In Stock"),
+                    print(strformat % (self.provider, target.given_name+, Fore.GREEN + "In Stock"),
                         flush=True,
                     )
                 else:
-                    print(
-                        "{} {}: {}".format(self.provider, target.name, "Out of Stock"),
+                    print(strformat % (self.provider, target.given_name, Fore.YELLOW + "Out of Stock"),
                         flush=True,
                     )
             except:
-                print("Error fetching {} from {}".format(target.name, self.provider))
+                print(
+                    strformat % (self.provider, target.given_name, Fore.RED + "ERROR FETCHING"),
+                    flush=True,
+                )
+                self.error_count += 1
         return
 
     async def check_gpu(self, target):
         return
 
     async def main(self):
-        start_time = datetime.datetime.now()
+        previous_check = start_time = datetime.datetime.now()
         await self.initialize()
         trials = 0
         while True:
-            trials += 1
             if trials % 10 == 0:
                 print(
-                    "Checked {} times over: {} (HH:MM:SS:MS)".format(
-                        trials, datetime.datetime.now() - start_time
+                    "{} Checked {} times over: {} (HH:MM:SS:MS)".format(
+                        self.provider, trials, datetime.datetime.now() - start_time
                     ),
                     flush=True,
                 )
-            await self.check_stock()
+
+            # Reset Error Count Periodically
+            if (datetime.datetime.now() - previous_check).seconds >= (30 * 60):
+                previous_check = datetime.datetime.now()
+                self.error_count = 0
+
+            # If more than 5 errors, do nothing until error count is reset
+            if self.error_count > 5:
+                continue
+            else:
+                await self.check_stock()
+                trials += 1
+
+            # Wait the given interval at the end of each interation
             for x in range(self.wait_interval):
                 await wait_one_second()
         return
@@ -139,8 +159,6 @@ class BBScraper(GPUScraper):
         image = Image.open(self.path + target.path)
         return contains_color(image, colors=[bb_yellow])
 
-        
-
     async def check_gpu(self, target):
         colors_to_rid = [(197, 203, 213), (43, 93, 245)]
         driver = self.driver
@@ -150,10 +168,14 @@ class BBScraper(GPUScraper):
         await wait_one_second()
         button.screenshot(self.path + target.path)
         # get rid of gray color that stops text recognition
-        converted = remove_colors(Image.open(self.path + target.path), colors=colors_to_rid, replacement=(255,255,255))
+        converted = remove_colors(
+            Image.open(self.path + target.path),
+            colors=colors_to_rid,
+            replacement=(255, 255, 255),
+        )
         text = pytesseract.image_to_string(converted).strip()
         if text == "":
-            self.check_gpu(target)
+            return await self.check_gpu(target)
         else:
             if "sold out" in text.lower():
                 return False
@@ -163,7 +185,7 @@ class BBScraper(GPUScraper):
 
 class BandHScraper(GPUScraper):
     def __init__(self, interval, targets):
-        super().__init__(interval, targets)
+        super().__init__(30, targets)
         self.path = "img/bandh/"
         self.provider = "B&H"
 
@@ -171,29 +193,47 @@ class BandHScraper(GPUScraper):
         bandh_blue = (10, 146, 202)
         image = Image.open(self.path + target.path)
         return contains_color(image, colors=[bandh_blue])
-        
-        
 
     async def check_gpu(self, target):
         driver = self.driver
         driver.get(target.link)
+        for x in range(30):
+            await wait_one_second()
         button = driver.find_element_by_class_name("cartRow_2dS2mdogHYAqhmKoANr6Ol")
         button.screenshot(self.path + target.path)
         await wait_one_second()
         button.screenshot(self.path + target.path)
-        text = pytesseract.image_to_string(Image.open(self.path+target.path)).strip()
+        text = pytesseract.image_to_string(Image.open(self.path + target.path)).strip()
         if "notify" or "cart" in text.lower():
             if "add to cart" in text.lower():
                 return await self.validate(target)
-            else: return False
-        
-            
+            else:
+                return False
 
 
+class NeweggScraper(GPUScraper):
+    def __init__(self, interval, targets):
+        super().__init__(interval, targets)
+        self.path = "img/newegg/"
+        self.provider = "Newegg"
+
+    async def check_gpu(self, target):
+        driver = self.driver
+        driver.get(target.link)
+        button = driver.find_element_by_class_name("product-inventory")
+        button.screenshot(self.path + target.path)
+        await wait_one_second()
+        button.screenshot(self.path + target.path)
+        text = pytesseract.image_to_string(Image.open(self.path + target.path)).strip()
+        if "in stock" in text.lower():
+            return True
+        elif "out of stock" in text.lower():
+            return False
+        else:
+            return await self.check_gpu(target)
 
 
-if __name__ == "__main__":
-
+def run_multithreaded():
     try:
         config = eval(open("scraper_config.json").read())
     except:
@@ -207,27 +247,46 @@ if __name__ == "__main__":
     newegg = []
 
     for target in config.get("targets", [{"n/a": "n/a"}]):
-        gpu = GPU(**target)
-        if "newegg" in gpu.link:
-            newegg.append(gpu)
-        elif "bhphotovideo" in gpu.link:
-            b_and_h.append(gpu)
-        elif "bestbuy" in gpu.link:
-            best_buy.append(gpu)
-
-    
+        for link in target["links"]:
+            gpu = GPU(name=target["name"], link=link)
+            if "newegg" in gpu.link:
+                newegg.append(gpu)
+            elif "bhphotovideo" in gpu.link:
+                b_and_h.append(gpu)
+            elif "bestbuy" in gpu.link:
+                best_buy.append(gpu)
 
     scraper1 = BBScraper(interval=wait_interval, targets=best_buy)
     scraper2 = BandHScraper(interval=wait_interval, targets=b_and_h)
-    
-    scraper_target_1 = partial(asyncio.run, scraper1.main())
-    scraper_target_2 = partial(asyncio.run, scraper2.main())
+    scraper3 = NeweggScraper(interval=wait_interval, targets=newegg)
 
-    threads = [Thread(target=scraper_target_1, name="BestBuyScraper"), Thread(target=scraper_target_2, name="BandHScraper")]
+    thread_1_target = partial(asyncio.run, scraper1.main())
+    thread_2_target = partial(asyncio.run, scraper2.main())
+    thread_3_target = partial(asyncio.run, scraper3.main())
+
+    threads = [
+        Thread(target=thread_1_target, name="BestBuyScraper"),
+        Thread(target=thread_2_target, name="BandHScraper"),
+        Thread(target=thread_3_target, name="NeweggScraper"),
+    ]
 
     for thread in threads:
         thread.start()
 
     for thread in threads:
         thread.join()
+    return
 
+
+def debug():
+    asus_ekwb = GPU(
+        name="ASUS EKWB 3080",
+        link="https://www.newegg.com/asus-geforce-rtx-3080-rtx3080-10g-ek/p/N82E16814126488",
+    )
+    scraper = NeweggScraper(interval=5, targets=[asus_ekwb])
+    asyncio.run(scraper.main())
+
+
+if __name__ == "__main__":
+    # debug()
+    run_multithreaded()
