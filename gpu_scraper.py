@@ -98,7 +98,7 @@ class GPUScraper:
                 if result:
                     self.play_alarm()
                     print(target.link, flush=True)
-                    print(strformat % (self.provider, target.given_name+, Fore.GREEN + "In Stock"),
+                    print(strformat % (self.provider, target.given_name, Fore.GREEN + "In Stock"),
                         flush=True,
                     )
                 else:
